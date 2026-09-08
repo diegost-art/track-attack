@@ -1,4 +1,4 @@
-# Zeitrille — Setup-Anleitung
+# Track Attack — Setup-Anleitung
 
 Ein Hitster-artiges Musik-Zeitleiste-Spiel als PWA, das über deinen eigenen
 Spotify-Premium-Account echte Songs abspielt.
@@ -8,7 +8,7 @@ Spotify-Premium-Account echte Songs abspielt.
 1. Gehe zu https://developer.spotify.com/dashboard und logge dich mit deinem
    Spotify-Account ein.
 2. Klicke auf **Create app**.
-   - App name: z. B. „Zeitrille"
+   - App name: z. B. „Track Attack"
    - App description: „Privates Musik-Ratespiel"
    - Redirect URI: **das trägst du erst in Schritt 3 ein**, wenn du deine
      GitHub-Pages-URL kennst (siehe unten) — trag vorerst
@@ -41,7 +41,7 @@ const CLIENT_ID = "a1b2c3d4e5f6...";
    ```
    git init
    git add .
-   git commit -m "Zeitrille initial"
+   git commit -m "Track Attack initial"
    git branch -M main
    git remote add origin https://github.com/DEIN-USERNAME/zeitrille.git
    git push -u origin main
@@ -67,7 +67,7 @@ const CLIENT_ID = "a1b2c3d4e5f6...";
 2. Logge dich mit „Mit Spotify verbinden" ein (nur beim ersten Mal nötig).
 3. Tippe auf „Zum Home-Bildschirm hinzufügen" (Safari: Teilen-Button → „Zum
    Home-Bildschirm"; Chrome: Menü → „App installieren").
-4. Ab jetzt startet Zeitrille wie eine echte App vom Homescreen.
+4. Ab jetzt startet Track Attack wie eine echte App vom Homescreen.
 
 ## Wichtig zu wissen
 

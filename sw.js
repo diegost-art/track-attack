@@ -1,4 +1,4 @@
-const CACHE = "zeitrille-v1";
+const CACHE = "track-attack-v1";
 const ASSETS = ["./", "./index.html", "./style.css", "./app.js", "./songs.json", "./manifest.json"];
 
 self.addEventListener("install", (e) => {

@@ -3,30 +3,63 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<title>Zeitrille</title>
-<meta name="theme-color" content="#171512" />
+<title>Track Attack</title>
+<meta name="theme-color" content="#ff2f92" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
+<!-- LOGIN SCREEN (nur für den Host, der Spotify steuert) -->
 <section id="screen-login" class="screen">
   <div class="groove-bg" aria-hidden="true"></div>
   <div class="login-card">
     <div class="vinyl-mark">
       <div class="vinyl-disc"><div class="vinyl-hole"></div></div>
     </div>
-    <h1 class="wordmark">ZEITRILLE</h1>
+    <h1 class="wordmark">TRACK ATTACK</h1>
     <p class="tagline">Hör den Song. Errate die Zeit. Bau deine Rille.</p>
     <button id="btn-login" class="btn btn-primary">Mit Spotify verbinden</button>
-    <p class="fineprint" id="login-note">Erfordert Spotify Premium.</p>
+    <p class="fineprint" id="login-note">Erfordert Spotify Premium. Nur der Gastgeber muss sich einloggen.</p>
+  </div>
+</section>
+
+<!-- JOIN SCREEN (für Mitspieler, die per QR-Code/Link ohne Spotify-Login beitreten) -->
+<section id="screen-join" class="screen hidden">
+  <div class="groove-bg" aria-hidden="true"></div>
+  <div class="login-card">
+    <div class="vinyl-mark">
+      <div class="vinyl-disc"><div class="vinyl-hole"></div></div>
+    </div>
+    <h1 class="wordmark">TRACK ATTACK</h1>
+    <p class="tagline">Du trittst einem Raum bei.</p>
+    <label class="field">
+      <span>Dein Name</span>
+      <input id="join-name" type="text" maxlength="20" placeholder="z. B. Mia" />
+    </label>
+    <button id="btn-join-room" class="btn btn-primary">Raum beitreten</button>
+    <p class="fineprint" id="join-note"></p>
+  </div>
+</section>
+
+<!-- LOBBY SCREEN (Warteraum vor Spielstart, Host + Gäste) -->
+<section id="screen-lobby" class="screen hidden">
+  <div class="setup-card">
+    <h2>Warteraum</h2>
+    <div id="lobby-host-block" class="hidden">
+      <p class="tagline">Lass die anderen scannen:</p>
+      <img id="lobby-qr" class="qr-image" alt="QR-Code zum Beitreten" />
+      <p class="room-code" id="lobby-code">ABCDE</p>
+    </div>
+    <p class="tagline" id="lobby-guest-note">Warte, bis der Gastgeber das Spiel startet …</p>
+    <div id="lobby-players" class="win-standings"></div>
+    <button id="btn-lobby-start" class="btn btn-primary hidden">Spiel starten</button>
   </div>
 </section>
 
@@ -36,9 +69,22 @@
     <h2>Neue Runde</h2>
 
     <div class="field">
+      <span>Spielmodus</span>
+      <div class="toggle-pair">
+        <button type="button" class="toggle-btn active" data-mode="local">Lokal (1 Gerät)</button>
+        <button type="button" class="toggle-btn" data-mode="online">Online (QR-Code)</button>
+      </div>
+    </div>
+
+    <div id="local-players-field" class="field">
       <span>Spieler</span>
       <div id="player-rows" class="player-rows"></div>
       <button type="button" id="btn-add-player" class="btn-ghost">+ Spieler hinzufügen</button>
+    </div>
+
+    <div id="online-host-field" class="field hidden">
+      <span>Dein Name (Gastgeber)</span>
+      <input id="host-name" type="text" maxlength="20" placeholder="z. B. Diego" />
     </div>
 
     <div class="field">
@@ -68,6 +114,7 @@
       </div>
     </label>
     <button id="btn-start" class="btn btn-primary">Spiel starten</button>
+    <button id="btn-create-room" class="btn btn-primary hidden">Raum erstellen</button>
   </div>
 </section>
 
@@ -116,6 +163,9 @@
 
 <div id="toast" class="toast hidden"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 <script src="app.js"></script>
 </body>
