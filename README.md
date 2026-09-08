@@ -84,18 +84,66 @@ const CLIENT_ID = "a1b2c3d4e5f6...";
 - Alles läuft rein clientseitig (kein eigener Server, keine Datenbank) —
   Zugangsdaten liegen nur lokal im Browser deines Handys.
 
-## Spielregeln (MVP)
+## Spielregeln
 
-- Die erste Karte wird gratis aufgedeckt und startet deine Zeitleiste.
-- Jede weitere Karte: Song abspielen (15-Sekunden-Ausschnitt), dann an der
-  richtigen Stelle in der Zeitleiste platzieren.
+- Jede:r Spieler:in bekommt zu Beginn eine gratis Startkarte für die eigene
+  Zeitleiste.
+- Reihum: Song abspielen (15-Sekunden-Ausschnitt), dann an der richtigen
+  Stelle in der **eigenen** Zeitleiste platzieren.
 - Richtig platziert → Karte bleibt in der Zeitleiste, Punktzahl steigt.
-- Falsch platziert → Karte wird verworfen, weiter geht's mit der nächsten.
-- Ziel erreicht (Standard: 10 Karten) → Sieg-Screen.
+- Falsch platziert → Karte wird verworfen, der/die Nächste ist dran.
+- Erste:r Spieler:in mit dem Zielwert an Karten (Standard: 10) gewinnt —
+  Endstand mit Rangliste wird angezeigt.
 
-## Mögliche Erweiterungen
+## Mehrspieler
 
-- Mehrspieler (abwechselnd, jeweils eigene Zeitleiste)
-- Leben/Fehlversuche statt sofortigem Verwerfen
-- Jahrzehnte-Filter oder Genre-Kategorien
-- Größere, kuratierte Song-Datenbank
+- Im Setup-Screen beliebig viele Spieler:innen hinzufügen (bis zu 8).
+- Es wird reihum gespielt; jede Person hat ihre eigene Zeitleiste. Die
+  Kopfzeile im Spiel zeigt „Am Zug: NAME" plus eine kompakte Punkteübersicht
+  aller Mitspieler:innen.
+
+## Songquelle: Klassiker oder ganzer Spotify-Katalog
+
+Zwei Modi im Setup wählbar:
+
+- **Kuratierte Klassiker** — die feste Liste aus `songs.json` (~90 bekannte
+  Songs, von Hand mit Jahr hinterlegt). Zuverlässig erkennbare Songs, gut für
+  Einsteiger:innen.
+- **Alle Spotify-Songs** — greift live auf die komplette Spotify-Suche zu.
+  Für jede Karte wird zufällig ein Song aus den gewählten Jahrzehnten/Genres
+  gesucht (`year:`- und `genre:`-Filter der Spotify-Suche), das tatsächliche
+  Erscheinungsjahr stammt direkt aus den Spotify-Metadaten. Dadurch ist
+  praktisch der komplette Katalog im Spiel — die Songs können aber auch mal
+  weniger bekannt sein.
+
+## Jahrzehnte- und Genre-Filter
+
+- **Jahrzehnte**: Mehrfachauswahl 50er–2020er. Leer gelassen = alle
+  Jahrzehnte. Gilt für beide Songquellen.
+- **Genres**: Nur im Modus „Alle Spotify-Songs" aktiv (Pop, Rock, Hip-Hop,
+  Dance/Electronic, Metal, Schlager/Deutschpop, R&B/Soul, Country, Latin,
+  Jazz). Leer gelassen = alle Genres. Mehrfachauswahl möglich — bei jeder
+  neuen Karte wird zufällig eines der gewählten Genres verwendet.
+- Genre-Namen sind Spotifys interne Genre-Tags; nicht jeder Künstler ist
+  darüber sauber kategorisiert, daher kann die Trefferqualität je nach Genre
+  schwanken.
+
+## Wichtig zu wissen
+
+- **Spotify Premium ist Pflicht** — die Wiedergabe läuft über das offizielle
+  Web Playback SDK, das nur mit Premium funktioniert.
+- Beim Spielstart muss dein Handy kurz eine aktive Spotify-Verbindung
+  aufbauen; falls „Player wird noch verbunden" erscheint, den Play-Button
+  einfach nochmal antippen.
+- Die App sucht jeden Klassiker-Song zur Laufzeit über die Spotify-Suche —
+  sollte ein Titel nicht gefunden werden, überspringt das Spiel ihn
+  automatisch. Im Spotify-Modus werden bereits gespielte Songs innerhalb
+  einer Runde nicht wiederholt.
+- Alles läuft rein clientseitig (kein eigener Server, keine Datenbank) —
+  Zugangsdaten liegen nur lokal im Browser deines Handys.
+
+## Mögliche weitere Erweiterungen
+
+- Leben/Fehlversuche statt sofortigem Verwerfen bei falscher Platzierung
+- Bonuspunkte für exaktes Jahr statt nur Reihenfolge
+- Eigene Genre-Presets pro Spielrunde speichern

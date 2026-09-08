@@ -31,13 +31,34 @@
 </section>
 
 <!-- SETUP SCREEN (players / config) -->
-<section id="screen-setup" class="screen hidden">
-  <div class="setup-card">
+<section id="screen-setup" class="screen setup-screen hidden">
+  <div class="setup-card setup-card-wide">
     <h2>Neue Runde</h2>
-    <label class="field">
-      <span>Spielername</span>
-      <input id="player-name" type="text" maxlength="20" placeholder="z. B. Diego" />
-    </label>
+
+    <div class="field">
+      <span>Spieler</span>
+      <div id="player-rows" class="player-rows"></div>
+      <button type="button" id="btn-add-player" class="btn-ghost">+ Spieler hinzufügen</button>
+    </div>
+
+    <div class="field">
+      <span>Songquelle</span>
+      <div class="toggle-pair">
+        <button type="button" class="toggle-btn active" data-source="curated">Kuratierte Klassiker</button>
+        <button type="button" class="toggle-btn" data-source="spotify">Alle Spotify-Songs</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span>Jahrzehnte <em>(leer = alle)</em></span>
+      <div id="decade-chips" class="chip-grid"></div>
+    </div>
+
+    <div class="field" id="genre-field">
+      <span>Genres <em>(nur bei „Alle Spotify-Songs", leer = alle)</em></span>
+      <div id="genre-chips" class="chip-grid"></div>
+    </div>
+
     <label class="field">
       <span>Karten zum Sieg</span>
       <div class="stepper">
@@ -53,9 +74,10 @@
 <!-- GAME SCREEN -->
 <section id="screen-game" class="screen hidden">
   <header class="game-header">
+    <div class="turn-chip">Am Zug: <strong id="player-chip">Spieler</strong></div>
     <div class="score-chip"><span id="score-count">0</span> / <span id="score-goal">10</span></div>
-    <div class="player-chip" id="player-chip">Spieler</div>
   </header>
+  <div id="standings-row" class="standings-row"></div>
 
   <div class="disc-zone">
     <button id="btn-play" class="disc-button" aria-label="Song abspielen">
@@ -87,6 +109,7 @@
   <div class="login-card">
     <h1 class="wordmark">GESCHAFFT</h1>
     <p class="tagline" id="win-text">Deine Rille hat 10 Treffer.</p>
+    <div id="win-standings" class="win-standings"></div>
     <button id="btn-again" class="btn btn-primary">Nochmal spielen</button>
   </div>
 </section>

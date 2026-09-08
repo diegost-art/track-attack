@@ -1,11 +1,11 @@
 /* ============================================================
-   Track Attack — Hitster-artiges Musik-Zeitleiste-Spiel
+   ZEITRILLE — Hitster-artiges Musik-Zeitleiste-Spiel
    Läuft komplett client-seitig gegen die Spotify Web API.
    ============================================================ */
 
 // ---- KONFIGURATION -------------------------------------------------
 // Trage hier deine Spotify Client-ID ein (siehe README.md, Schritt 1).
-const CLIENT_ID = "c88ea2eefa8842ab806695da036851d6";
+const CLIENT_ID = "DEINE_SPOTIFY_CLIENT_ID";
 const REDIRECT_URI = window.location.origin + window.location.pathname;
 const SCOPES = [
   "streaming",
@@ -17,16 +17,51 @@ const SCOPES = [
 
 const SNIPPET_START_MS = 25000; // Startet mitten im Song, um Intros zu überspringen
 const SNIPPET_DURATION_MS = 15000;
+const MAX_PLAYERS = 8;
+const CURRENT_YEAR = new Date().getFullYear();
+
+// Jahrzehnte-Auswahl (Startjahr -> Label)
+const DECADES = [
+  { start: 1950, label: "50er" },
+  { start: 1960, label: "60er" },
+  { start: 1970, label: "70er" },
+  { start: 1980, label: "80er" },
+  { start: 1990, label: "90er" },
+  { start: 2000, label: "2000er" },
+  { start: 2010, label: "2010er" },
+  { start: 2020, label: "2020er" },
+];
+
+// Genres für die Spotify-Suche (Suchfeld-Filter genre:"...")
+const GENRES = [
+  { key: "pop", label: "Pop" },
+  { key: "rock", label: "Rock" },
+  { key: "hip hop", label: "Hip-Hop" },
+  { key: "dance", label: "Dance/Electronic" },
+  { key: "metal", label: "Metal" },
+  { key: "schlager", label: "Schlager/Deutschpop" },
+  { key: "r-n-b", label: "R&B/Soul" },
+  { key: "country", label: "Country" },
+  { key: "latin", label: "Latin" },
+  { key: "jazz", label: "Jazz" },
+];
 
 // ---- STATE -----------------------------------------------------------
-let allSongs = [];
-let deck = [];
-let timeline = [];
-let currentSong = null;
+let allSongs = [];        // kuratierte Klassiker-Liste (aus songs.json)
+let curatedDeck = [];      // gemischte, gefilterte Kopie für den laufenden Run
+let usedTrackIds = new Set(); // vermiedene Wiederholungen im Spotify-Modus
+
+let players = [];          // [{ name, timeline: [] }]
+let currentPlayerIndex = 0;
+
+let currentSong = null;    // { title, artist, year, uri }
 let selectedGapIndex = null;
 let snippetTimer = null;
+
 let goal = 10;
-let playerName = "Spieler";
+let sourceMode = "curated"; // "curated" | "spotify"
+let selectedDecades = new Set();
+let selectedGenres = new Set();
 
 let spotifyPlayer = null;
 let deviceId = null;
@@ -185,7 +220,7 @@ async function initPlayerIfReady() {
   if (!token) return;
 
   spotifyPlayer = new Spotify.Player({
-    name: "Track Attack",
+    name: "Zeitrille",
     getOAuthToken: async (cb) => cb(await getValidToken()),
     volume: 0.9,
   });
@@ -233,8 +268,39 @@ async function pausePlayback() {
 }
 
 // ============================================================
-// SONG-AUFLÖSUNG (Titel/Künstler -> Spotify-URI)
+// SONGQUELLEN
 // ============================================================
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+async function loadCuratedSongs() {
+  const res = await fetch("songs.json");
+  allSongs = await res.json();
+}
+
+function decadeRanges() {
+  // Liefert Liste von [start, end] Jahres-Bereichen entsprechend der Auswahl.
+  // Leere Auswahl = kompletter Zeitraum.
+  if (selectedDecades.size === 0) return [[1950, CURRENT_YEAR]];
+  return [...selectedDecades].map((start) => [start, start + 9]);
+}
+
+function yearMatchesSelection(year) {
+  return decadeRanges().some(([a, b]) => year >= a && year <= b);
+}
+
+function buildCuratedDeck() {
+  const filtered = allSongs.filter((s) => yearMatchesSelection(s.year));
+  curatedDeck = shuffle(filtered.length ? filtered : allSongs);
+  if (!filtered.length) toast("Keine Klassiker in diesen Jahrzehnten, nehme alle.", 3500);
+}
 
 async function resolveTrackUri(song) {
   if (song.uri) return song.uri;
@@ -248,61 +314,218 @@ async function resolveTrackUri(song) {
   return track.uri;
 }
 
+// Zieht eine zufällige Karte aus der kuratierten Liste und löst deren Spotify-URI auf.
+async function drawCuratedCard() {
+  if (curatedDeck.length === 0) buildCuratedDeck();
+  const song = curatedDeck.pop();
+  if (!song) return null;
+  const uri = await resolveTrackUri(song);
+  if (!uri) return drawCuratedCard(); // nicht gefunden -> nächste versuchen
+  return { title: song.title, artist: song.artist, year: song.year, uri };
+}
+
+// Zieht eine zufällige Karte direkt aus dem gesamten Spotify-Katalog,
+// gefiltert nach ausgewählten Jahrzehnten/Genres über die Such-API.
+async function drawSpotifyCard(attempts = 0) {
+  if (attempts > 8) {
+    toast("Keine passenden Songs gefunden – Filter lockern?", 4000);
+    return null;
+  }
+
+  const ranges = decadeRanges();
+  const [start, end] = ranges[Math.floor(Math.random() * ranges.length)];
+  const genre =
+    selectedGenres.size > 0
+      ? [...selectedGenres][Math.floor(Math.random() * selectedGenres.size)]
+      : null;
+
+  const parts = [`year:${start}-${end}`];
+  if (genre) parts.push(`genre:"${genre}"`);
+  const query = parts.join(" ");
+  const offset = Math.floor(Math.random() * 150);
+
+  const res = await spotifyFetch(
+    `/search?q=${encodeURIComponent(query)}&type=track&limit=20&offset=${offset}&market=from_token`
+  );
+  if (!res.ok) return drawSpotifyCard(attempts + 1);
+
+  const data = await res.json();
+  const items = (data.tracks?.items || []).filter(
+    (t) => t.album?.release_date && !usedTrackIds.has(t.id)
+  );
+  if (items.length === 0) return drawSpotifyCard(attempts + 1);
+
+  const track = items[Math.floor(Math.random() * items.length)];
+  usedTrackIds.add(track.id);
+  const year = parseInt(track.album.release_date.slice(0, 4), 10);
+  if (!year || year < 1900) return drawSpotifyCard(attempts + 1);
+
+  return {
+    title: track.name,
+    artist: track.artists.map((a) => a.name).join(", "),
+    year,
+    uri: track.uri,
+  };
+}
+
+async function drawCard() {
+  return sourceMode === "spotify" ? drawSpotifyCard() : drawCuratedCard();
+}
+
+// ============================================================
+// SETUP UI (Spieler, Quelle, Filter)
+// ============================================================
+
+function renderPlayerRows() {
+  const wrap = $("player-rows");
+  wrap.innerHTML = "";
+  players.forEach((p, i) => {
+    const row = document.createElement("div");
+    row.className = "player-row";
+    row.innerHTML = `
+      <input type="text" maxlength="20" placeholder="Spieler ${i + 1}" value="${escapeHtml(p.name)}" />
+    `;
+    const input = row.querySelector("input");
+    input.addEventListener("input", () => (p.name = input.value));
+
+    if (players.length > 1) {
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "player-remove";
+      removeBtn.textContent = "×";
+      removeBtn.addEventListener("click", () => {
+        players.splice(i, 1);
+        renderPlayerRows();
+      });
+      row.appendChild(removeBtn);
+    }
+    wrap.appendChild(row);
+  });
+  $("btn-add-player").classList.toggle("hidden", players.length >= MAX_PLAYERS);
+}
+
+function addPlayer() {
+  if (players.length >= MAX_PLAYERS) return;
+  players.push({ name: "", timeline: [] });
+  renderPlayerRows();
+}
+
+function renderDecadeChips() {
+  const wrap = $("decade-chips");
+  wrap.innerHTML = "";
+  DECADES.forEach((d) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.textContent = d.label;
+    chip.addEventListener("click", () => {
+      if (selectedDecades.has(d.start)) selectedDecades.delete(d.start);
+      else selectedDecades.add(d.start);
+      chip.classList.toggle("selected", selectedDecades.has(d.start));
+    });
+    wrap.appendChild(chip);
+  });
+}
+
+function renderGenreChips() {
+  const wrap = $("genre-chips");
+  wrap.innerHTML = "";
+  GENRES.forEach((g) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.textContent = g.label;
+    chip.addEventListener("click", () => {
+      if (selectedGenres.has(g.key)) selectedGenres.delete(g.key);
+      else selectedGenres.add(g.key);
+      chip.classList.toggle("selected", selectedGenres.has(g.key));
+    });
+    wrap.appendChild(chip);
+  });
+}
+
+function setSourceMode(mode) {
+  sourceMode = mode;
+  document.querySelectorAll(".toggle-btn").forEach((b) => {
+    b.classList.toggle("active", b.dataset.source === mode);
+  });
+  $("genre-field").classList.toggle("disabled", mode !== "spotify");
+}
+
+function escapeHtml(str) {
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
+}
+
 // ============================================================
 // SPIEL-LOGIK
 // ============================================================
 
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+function currentPlayer() {
+  return players[currentPlayerIndex];
 }
 
-async function loadSongs() {
-  const res = await fetch("songs.json");
-  allSongs = await res.json();
-}
-
-function startGame() {
-  deck = shuffle(allSongs);
-  timeline = [];
+async function startGame() {
+  players.forEach((p, i) => {
+    if (!p.name.trim()) p.name = `Spieler ${i + 1}`;
+    p.timeline = [];
+  });
+  currentPlayerIndex = 0;
   currentSong = null;
   selectedGapIndex = null;
+  usedTrackIds = new Set();
+  if (sourceMode === "curated") buildCuratedDeck();
+
   $("score-goal").textContent = String(goal);
-  $("player-chip").textContent = playerName;
-  updateScore();
-  renderTimeline();
-  resetDiscUI();
   showScreen("game");
-  drawFirstCardFree();
-}
+  $("mystery-status").textContent = "Bereite Spiel vor …";
+  resetDiscUI();
 
-function updateScore() {
-  $("score-count").textContent = String(timeline.length);
-}
-
-// Die allererste Karte wird gratis aufgedeckt, damit die Zeitleiste einen Startpunkt hat.
-function drawFirstCardFree() {
-  const song = deck.pop();
-  timeline.push(song);
-  updateScore();
+  await dealStarterCards();
+  updateHeader();
   renderTimeline();
   drawNextCard();
 }
 
-function drawNextCard() {
-  if (deck.length === 0) {
-    // Deck erneut mischen falls Songs ausgehen (sollte bei ausreichend großer Liste selten sein)
-    deck = shuffle(allSongs.filter((s) => !timeline.includes(s)));
+async function dealStarterCards() {
+  for (const p of players) {
+    const card = await drawCard();
+    if (card) p.timeline.push(card);
   }
-  currentSong = deck.pop();
+}
+
+function updateHeader() {
+  $("player-chip").textContent = currentPlayer().name;
+  $("score-count").textContent = String(currentPlayer().timeline.length);
+  renderStandings();
+}
+
+function renderStandings() {
+  const row = $("standings-row");
+  row.innerHTML = "";
+  if (players.length < 2) return;
+  players.forEach((p, i) => {
+    const pill = document.createElement("span");
+    pill.className = "standing-pill" + (i === currentPlayerIndex ? " current" : "");
+    pill.textContent = `${p.name}: ${p.timeline.length}`;
+    row.appendChild(pill);
+  });
+}
+
+async function drawNextCard() {
+  currentSong = null;
   selectedGapIndex = null;
   resetDiscUI();
+  $("mystery-status").textContent = "Sucht Song …";
+
+  const card = await drawCard();
+  if (!card) {
+    $("mystery-status").textContent = "Keine Songs mehr verfügbar";
+    return;
+  }
+  currentSong = card;
   $("mystery-status").textContent = "Tippe zum Abspielen";
-  renderTimeline();
 }
 
 function resetDiscUI() {
@@ -313,6 +536,7 @@ function resetDiscUI() {
 }
 
 async function togglePlay() {
+  if (!currentSong) return;
   const btn = $("btn-play");
   const isPlaying = btn.classList.contains("playing");
 
@@ -322,15 +546,7 @@ async function togglePlay() {
     return;
   }
 
-  $("mystery-status").textContent = "Lade Song …";
-  const uri = await resolveTrackUri(currentSong);
-  if (!uri) {
-    toast("Song auf Spotify nicht gefunden, nächster …");
-    drawNextCard();
-    return;
-  }
-
-  const started = await playSnippet(uri);
+  const started = await playSnippet(currentSong.uri);
   if (!started) return;
 
   btn.classList.add("playing");
@@ -351,7 +567,7 @@ function renderTimeline() {
   const track = $("timeline-track");
   track.innerHTML = "";
 
-  const sorted = [...timeline].sort((a, b) => a.year - b.year);
+  const sorted = [...currentPlayer().timeline].sort((a, b) => a.year - b.year);
 
   if (sorted.length === 0) {
     track.innerHTML = '<div class="tl-empty-hint">Deine Zeitleiste ist leer</div>';
@@ -364,7 +580,6 @@ function renderTimeline() {
     track.appendChild(makeGap(i + 1));
   });
 
-  // Zur Mitte scrollen
   requestAnimationFrame(() => {
     track.scrollLeft = (track.scrollWidth - track.clientWidth) / 2;
   });
@@ -386,12 +601,6 @@ function makeGap(index) {
   return div;
 }
 
-function escapeHtml(str) {
-  const d = document.createElement("div");
-  d.textContent = str;
-  return d.innerHTML;
-}
-
 function selectGap(index) {
   if (!currentSong) {
     toast("Erst den Song abspielen.");
@@ -409,6 +618,7 @@ async function confirmPlacement() {
   await pausePlayback();
   resetDiscUI();
 
+  const timeline = currentPlayer().timeline;
   const sorted = [...timeline].sort((a, b) => a.year - b.year);
   const before = sorted[selectedGapIndex - 1];
   const after = sorted[selectedGapIndex];
@@ -421,7 +631,7 @@ async function confirmPlacement() {
 
   if (correct) {
     timeline.push(currentSong);
-    updateScore();
+    updateHeader();
   }
 }
 
@@ -436,17 +646,40 @@ function showReveal(correct) {
   overlay.classList.remove("hidden");
 }
 
-function continueAfterReveal() {
+async function continueAfterReveal() {
   $("reveal-overlay").classList.add("hidden");
   currentSong = null;
 
-  if (timeline.length >= goal) {
-    $("win-text").textContent = `Deine Rille hat ${timeline.length} Treffer, ${playerName}!`;
-    showScreen("win");
+  const winner = players.find((p) => p.timeline.length >= goal);
+  if (winner) {
+    showWinScreen();
     return;
   }
+
+  currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+  updateHeader();
   renderTimeline();
-  drawNextCard();
+  await drawNextCard();
+}
+
+function showWinScreen() {
+  const ranked = [...players].sort((a, b) => b.timeline.length - a.timeline.length);
+  $("win-text").textContent =
+    players.length > 1
+      ? `${ranked[0].name} gewinnt mit ${ranked[0].timeline.length} Treffern!`
+      : `Deine Rille hat ${ranked[0].timeline.length} Treffer, ${ranked[0].name}!`;
+
+  const wrap = $("win-standings");
+  wrap.innerHTML = "";
+  if (players.length > 1) {
+    ranked.forEach((p, i) => {
+      const row = document.createElement("div");
+      row.className = "standing-row" + (i === 0 ? " winner" : "");
+      row.innerHTML = `<span><span class="rank">${i + 1}.</span>${escapeHtml(p.name)}</span><span>${p.timeline.length}</span>`;
+      wrap.appendChild(row);
+    });
+  }
+  showScreen("win");
 }
 
 // ============================================================
@@ -457,19 +690,22 @@ $("btn-login").addEventListener("click", startLogin);
 $("btn-continue").addEventListener("click", continueAfterReveal);
 $("btn-play").addEventListener("click", togglePlay);
 $("btn-again").addEventListener("click", () => showScreen("setup"));
+$("btn-add-player").addEventListener("click", addPlayer);
 
 $("btn-start").addEventListener("click", () => {
-  const name = $("player-name").value.trim();
-  if (name) playerName = name;
   startGame();
 });
 
 document.querySelectorAll(".stepper-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     const step = Number(btn.dataset.step);
-    goal = Math.min(20, Math.max(5, goal + step));
+    goal = Math.min(20, Math.max(3, goal + step));
     $("goal-value").textContent = String(goal);
   });
+});
+
+document.querySelectorAll(".toggle-btn").forEach((btn) => {
+  btn.addEventListener("click", () => setSourceMode(btn.dataset.source));
 });
 
 // ============================================================
@@ -477,7 +713,13 @@ document.querySelectorAll(".stepper-btn").forEach((btn) => {
 // ============================================================
 
 async function init() {
-  await loadSongs();
+  await loadCuratedSongs();
+
+  players = [{ name: "", timeline: [] }];
+  renderPlayerRows();
+  renderDecadeChips();
+  renderGenreChips();
+  setSourceMode("curated");
 
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
