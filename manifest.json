@@ -1,0 +1,15 @@
+{
+  "name": "Zeitrille",
+  "short_name": "Zeitrille",
+  "description": "Hör den Song, errate das Jahr, bau deine Zeitleiste.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#171512",
+  "theme_color": "#171512",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

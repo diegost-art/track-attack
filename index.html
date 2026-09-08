@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>Zeitrille</title>
+<meta name="theme-color" content="#171512" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<section id="screen-login" class="screen">
+  <div class="groove-bg" aria-hidden="true"></div>
+  <div class="login-card">
+    <div class="vinyl-mark">
+      <div class="vinyl-disc"><div class="vinyl-hole"></div></div>
+    </div>
+    <h1 class="wordmark">ZEITRILLE</h1>
+    <p class="tagline">Hör den Song. Errate die Zeit. Bau deine Rille.</p>
+    <button id="btn-login" class="btn btn-primary">Mit Spotify verbinden</button>
+    <p class="fineprint" id="login-note">Erfordert Spotify Premium.</p>
+  </div>
+</section>
+
+<!-- SETUP SCREEN (players / config) -->
+<section id="screen-setup" class="screen hidden">
+  <div class="setup-card">
+    <h2>Neue Runde</h2>
+    <label class="field">
+      <span>Spielername</span>
+      <input id="player-name" type="text" maxlength="20" placeholder="z. B. Diego" />
+    </label>
+    <label class="field">
+      <span>Karten zum Sieg</span>
+      <div class="stepper">
+        <button type="button" data-step="-1" class="stepper-btn">–</button>
+        <span id="goal-value">10</span>
+        <button type="button" data-step="1" class="stepper-btn">+</button>
+      </div>
+    </label>
+    <button id="btn-start" class="btn btn-primary">Spiel starten</button>
+  </div>
+</section>
+
+<!-- GAME SCREEN -->
+<section id="screen-game" class="screen hidden">
+  <header class="game-header">
+    <div class="score-chip"><span id="score-count">0</span> / <span id="score-goal">10</span></div>
+    <div class="player-chip" id="player-chip">Spieler</div>
+  </header>
+
+  <div class="disc-zone">
+    <button id="btn-play" class="disc-button" aria-label="Song abspielen">
+      <div class="vinyl-disc spinning-ready" id="vinyl-visual"><div class="vinyl-hole"></div></div>
+      <svg id="icon-play" class="disc-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <svg id="icon-pause" class="disc-icon hidden" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+    </button>
+    <p class="mystery-label" id="mystery-status">Tippe zum Abspielen</p>
+  </div>
+
+  <div class="timeline-wrap">
+    <p class="timeline-hint" id="timeline-hint">Wähle die Position in deiner Zeitleiste:</p>
+    <div class="timeline-scroll" id="timeline-track"></div>
+  </div>
+
+  <div class="reveal-overlay hidden" id="reveal-overlay">
+    <div class="reveal-card" id="reveal-card">
+      <p class="reveal-result" id="reveal-result">Richtig!</p>
+      <p class="reveal-year" id="reveal-year">1975</p>
+      <p class="reveal-song" id="reveal-song">Bohemian Rhapsody</p>
+      <p class="reveal-artist" id="reveal-artist">Queen</p>
+      <button id="btn-continue" class="btn btn-primary">Weiter</button>
+    </div>
+  </div>
+</section>
+
+<!-- WIN SCREEN -->
+<section id="screen-win" class="screen hidden">
+  <div class="login-card">
+    <h1 class="wordmark">GESCHAFFT</h1>
+    <p class="tagline" id="win-text">Deine Rille hat 10 Treffer.</p>
+    <button id="btn-again" class="btn btn-primary">Nochmal spielen</button>
+  </div>
+</section>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://sdk.scdn.co/spotify-player.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
