@@ -27,6 +27,12 @@
     <p class="tagline">Hör den Song. Errate die Zeit. Bau deine Rille.</p>
     <button id="btn-login" class="btn btn-primary">Mit Spotify verbinden</button>
     <p class="fineprint" id="login-note">Erfordert Spotify Premium. Nur der Gastgeber muss sich einloggen.</p>
+    <button type="button" id="btn-toggle-debug" class="link-btn">Verbindungsprobleme? Technische Details</button>
+    <div id="debug-details" class="debug-box hidden">
+      <p>Diese Redirect-URI muss <strong>exakt</strong> (inkl. Groß-/Kleinschreibung und Slash) im Spotify-Dashboard unter „Redirect URIs" eingetragen sein:</p>
+      <code id="debug-redirect-uri"></code>
+      <p>Falls du eine Fehlermeldung „access_denied" siehst: Dein Spotify-Account muss im Dashboard unter „User Management" als Tester hinzugefügt sein (Development Mode erlaubt nur freigegebene Accounts).</p>
+    </div>
   </div>
 </section>
 

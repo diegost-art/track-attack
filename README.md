@@ -142,6 +142,33 @@ Zwei Modi im Setup wählbar:
 - Alles läuft rein clientseitig (kein eigener Server, keine Datenbank) —
   Zugangsdaten liegen nur lokal im Browser deines Handys.
 
+## Fehlerbehebung: "Verbindung zu Spotify funktioniert nicht"
+
+Auf dem Login-Screen gibt es jetzt einen Link **„Verbindungsprobleme? Technische
+Details"**, der dir die exakte Redirect-URI deines aktuellen Deployments zeigt.
+Die häufigsten Ursachen der Reihe nach:
+
+1. **Redirect-URI stimmt nicht exakt überein.** Öffne den Debug-Link auf dem
+   Login-Screen, kopiere die angezeigte URL 1:1 (inkl. Groß-/Kleinschreibung
+   und abschließendem `/`) in Spotify-Dashboard → deine App → Settings →
+   Redirect URIs.
+2. **Dein Account ist im Development Mode nicht freigegeben.** Spotify-Apps
+   starten im Testmodus — nur explizit hinzugefügte Nutzer:innen können sich
+   einloggen. Dashboard → Settings → **User Management** → „Add new user" →
+   deine Spotify-E-Mail-Adresse eintragen. Seit diesem Update zeigt die App
+   bei diesem Fehler eine klare Meldung („Zugriff verweigert") statt einfach
+   nichts zu tun.
+3. **CLIENT_ID falsch/Platzhalter vergessen** — prüfen, ob in `app.js` deine
+   echte Client-ID steht statt `DEINE_SPOTIFY_CLIENT_ID`.
+4. **Songs werden nicht gefunden** (Klassiker-Modus bricht schnell ab): war
+   ein Bug in der Suchanfrage bei Titeln mit Klammern/Apostrophen — ist mit
+   diesem Update behoben (Titel/Artist werden jetzt in Anführungszeichen
+   gesucht).
+5. **Fehler in der Konsole ansehen**: Alle Spotify-API-Fehler werden jetzt
+   mit Statuscode in der Browser-Konsole protokolliert (`console.error`),
+   nützlich fürs Debuggen über den Remote-Inspector (siehe Test-Anleitung
+   oben).
+
 ## Mögliche weitere Erweiterungen
 
 - Leben/Fehlversuche statt sofortigem Verwerfen bei falscher Platzierung

@@ -218,17 +218,52 @@ function isLoggedIn() {
   return !!localStorage.getItem("zr_refresh_token");
 }
 
-async function spotifyFetch(path, options = {}) {
+function fakeFailedResponse(status, message) {
+  // Einheitliche "Response"-Form, damit alle Aufrufer nur res.ok/res.status
+  // prüfen müssen und nichts unerwartet eine Exception wirft.
+  return {
+    ok: false,
+    status,
+    json: async () => ({ error: { message } }),
+    clone() { return this; },
+  };
+}
+
+async function spotifyFetch(path, options = {}, isRetry = false) {
   const token = await getValidToken();
-  if (!token) throw new Error("Nicht eingeloggt");
-  return fetch(`https://api.spotify.com/v1${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
+  if (!token) {
+    console.error("spotifyFetch: kein gültiger Token vorhanden für", path);
+    return fakeFailedResponse(401, "Nicht eingeloggt");
+  }
+  let res;
+  try {
+    res = await fetch(`https://api.spotify.com/v1${path}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+  } catch (networkErr) {
+    console.error("Netzwerkfehler bei Spotify-Anfrage", path, networkErr);
+    return fakeFailedResponse(0, "Netzwerkfehler");
+  }
+
+  // Token evtl. serverseitig invalidiert, obwohl unsere lokale Ablaufzeit noch gültig
+  // aussah -> einmalig mit erzwungener Erneuerung wiederholen, bevor wir aufgeben.
+  if (res.status === 401 && !isRetry) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return spotifyFetch(path, options, true);
+  }
+
+  if (!res.ok && res.status !== 204) {
+    let detail = "";
+    try { detail = (await res.clone().json())?.error?.message || ""; } catch {}
+    console.error(`Spotify-API-Fehler ${res.status} bei ${path}`, detail);
+  }
+
+  return res;
 }
 
 // ============================================================
@@ -305,9 +340,11 @@ function buildCuratedDeck() {
 
 async function resolveTrackUri(song) {
   if (song.uri) return song.uri;
-  const q = encodeURIComponent(`track:${song.title} artist:${song.artist}`);
+  // Titel/Artist in Anführungszeichen: verhindert Fehltreffer bei Klammern,
+  // Apostrophen o. Ä. (z. B. "(I Can't Get No) Satisfaction").
+  const q = encodeURIComponent(`track:"${song.title}" artist:"${song.artist}"`);
   const res = await spotifyFetch(`/search?q=${q}&type=track&limit=1`);
-  if (!res.ok) return null;
+  if (!res.ok) return { error: res.status };
   const data = await res.json();
   const track = data.tracks?.items?.[0];
   if (!track) return null;
@@ -315,13 +352,24 @@ async function resolveTrackUri(song) {
   return track.uri;
 }
 
-async function drawCuratedCard() {
+async function drawCuratedCard(attempts = 0) {
+  if (attempts > 15) {
+    toast("Songsuche schlägt wiederholt fehl — Spotify-Verbindung prüfen.", 4500);
+    return null;
+  }
   if (curatedDeck.length === 0) buildCuratedDeck();
   const song = curatedDeck.pop();
   if (!song) return null;
-  const uri = await resolveTrackUri(song);
-  if (!uri) return drawCuratedCard();
-  return { title: song.title, artist: song.artist, year: song.year, uri };
+  const result = await resolveTrackUri(song);
+  if (!result) return drawCuratedCard(attempts + 1);
+  if (typeof result === "object" && result.error) {
+    if (result.error === 401 || result.error === 403) {
+      toast("Spotify-Sitzung ungültig — bitte neu verbinden.", 5000);
+      return null;
+    }
+    return drawCuratedCard(attempts + 1);
+  }
+  return { title: song.title, artist: song.artist, year: song.year, uri: result };
 }
 
 async function drawSpotifyCard(attempts = 0) {
@@ -341,8 +389,12 @@ async function drawSpotifyCard(attempts = 0) {
   const offset = Math.floor(Math.random() * 150);
 
   const res = await spotifyFetch(
-    `/search?q=${encodeURIComponent(query)}&type=track&limit=20&offset=${offset}&market=from_token`
+    `/search?q=${encodeURIComponent(query)}&type=track&limit=20&offset=${offset}`
   );
+  if (res.status === 401 || res.status === 403) {
+    toast("Spotify-Sitzung ungültig — bitte neu verbinden.", 5000);
+    return null;
+  }
   if (!res.ok) return drawSpotifyCard(attempts + 1);
 
   const data = await res.json();
@@ -994,6 +1046,11 @@ function displayReveal(correct, song) {
 
 $("btn-login").addEventListener("click", startLogin);
 
+$("btn-toggle-debug").addEventListener("click", () => {
+  $("debug-redirect-uri").textContent = REDIRECT_URI;
+  $("debug-details").classList.toggle("hidden");
+});
+
 $("btn-join-room").addEventListener("click", () => {
   const name = $("join-name").value.trim();
   if (!name) { toast("Bitte einen Namen eingeben."); return; }
@@ -1060,6 +1117,7 @@ async function init() {
   const params = new URLSearchParams(window.location.search);
   const roomParam = params.get("room");
   const code = params.get("code");
+  const authError = params.get("error");
 
   // Beitritt per QR-Code/Link: komplett ohne Spotify-Login.
   if (roomParam && !code) {
@@ -1068,12 +1126,31 @@ async function init() {
     return;
   }
 
+  // Spotify hat den Login abgelehnt/abgebrochen -> konkrete Ursache statt stillem Fehlschlag.
+  if (authError) {
+    window.history.replaceState({}, "", REDIRECT_URI);
+    if (authError === "access_denied") {
+      toast(
+        "Zugriff verweigert: Ist dein Spotify-Account im Dashboard unter 'User Management' als Tester freigegeben?",
+        7000
+      );
+    } else {
+      toast("Spotify-Login-Fehler: " + authError, 6000);
+    }
+    showScreen("login");
+    return;
+  }
+
   if (code) {
     window.history.replaceState({}, "", REDIRECT_URI);
     try {
       await exchangeCodeForToken(code);
     } catch (e) {
-      toast("Login fehlgeschlagen, bitte erneut versuchen.");
+      console.error("Token-Austausch fehlgeschlagen:", e);
+      toast(
+        "Login fehlgeschlagen — meist eine falsche Redirect-URI im Spotify-Dashboard. Details unten auf dem Login-Screen.",
+        7000
+      );
       showScreen("login");
       return;
     }
