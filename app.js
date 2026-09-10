@@ -63,6 +63,7 @@ let selectedGapIndex = null;
 let spotifyPlayer = null;
 let deviceId = null;
 let sdkReady = false;
+let audioElementActivated = false;
 
 // ---- STATE: lokaler Hot-Seat-Modus -------------------------------------
 let setupMode = "local"; // "local" | "online" (nur im Setup-Screen relevant)
@@ -144,7 +145,7 @@ async function sha256(plain) {
 }
 
 async function startLogin() {
-  if (!CLIENT_ID || CLIENT_ID === "DEINE_SPOTIFY_CLIENT_ID") {
+  if (!CLIENT_ID || CLIENT_ID === "c88ea2eefa8842ab806695da036851d6") {
     toast("Bitte zuerst CLIENT_ID in app.js eintragen (siehe README).", 5000);
     return;
   }
@@ -291,8 +292,27 @@ async function initPlayerIfReady() {
   spotifyPlayer.addListener("initialization_error", ({ message }) => toast("Player-Fehler: " + message));
   spotifyPlayer.addListener("authentication_error", () => toast("Anmeldung abgelaufen, bitte neu verbinden."));
   spotifyPlayer.addListener("account_error", () => toast("Spotify Premium wird für die Wiedergabe benötigt.", 5000));
+  spotifyPlayer.addListener("autoplay_failed", () => {
+    toast("Browser blockiert automatische Wiedergabe — bitte nochmal auf Play tippen.", 4500);
+  });
 
   await spotifyPlayer.connect();
+}
+
+// Mobile Browser (v. a. iOS Safari, teils Android Chrome) blockieren Audio,
+// das über die REST-API auf diesem Gerät gestartet wird, als "Autoplay",
+// weil der eigentliche Play-Befehl per Netzwerk-Umweg über Spotifys Server
+// läuft statt direkt im Klick-Moment. activateElement() "entriegelt" den
+// Audio-Kontext einmalig innerhalb eines echten Nutzer-Tips.
+// Siehe: https://developer.spotify.com/documentation/web-playback-sdk/reference/#api-spotify-player-activateelement
+async function unlockAudioElement() {
+  if (audioElementActivated || !spotifyPlayer) return;
+  try {
+    await spotifyPlayer.activateElement();
+    audioElementActivated = true;
+  } catch (e) {
+    console.warn("activateElement() fehlgeschlagen:", e);
+  }
 }
 
 async function playSnippet(uri) {
@@ -656,6 +676,7 @@ async function hostDrawNextCard() {
 // Host: Disc-Button in Online-Runden
 async function hostTogglePlayOnline() {
   if (!currentSong) return;
+  await unlockAudioElement();
   const playing = roomState.turn.cardState === "playing";
   if (playing) {
     clearTimeout(snippetTimer);
@@ -665,6 +686,7 @@ async function hostTogglePlayOnline() {
   }
   const started = await playSnippet(currentSong.uri);
   if (!started) return;
+  spotifyPlayer?.resume().catch(() => {}); // zusätzlicher Nudge gegen Mobile-Autoplay-Blocker
   await roomRef.child("turn/cardState").set("playing");
 
   snippetTimer = setTimeout(async () => {
@@ -895,12 +917,14 @@ function resetDiscUI() {
 
 async function togglePlayLocal() {
   if (!currentSong) return;
+  await unlockAudioElement();
   const btn = $("btn-play");
   const isPlaying = btn.classList.contains("playing");
   if (isPlaying) { resetDiscUI(); await pausePlayback(); return; }
 
   const started = await playSnippet(currentSong.uri);
   if (!started) return;
+  spotifyPlayer?.resume().catch(() => {}); // zusätzlicher Nudge gegen Mobile-Autoplay-Blocker
   btn.classList.add("playing");
   $("icon-play").classList.add("hidden");
   $("icon-pause").classList.remove("hidden");

@@ -144,9 +144,21 @@ Zwei Modi im Setup wählbar:
 
 ## Fehlerbehebung: "Verbindung zu Spotify funktioniert nicht"
 
-Auf dem Login-Screen gibt es jetzt einen Link **„Verbindungsprobleme? Technische
-Details"**, der dir die exakte Redirect-URI deines aktuellen Deployments zeigt.
-Die häufigsten Ursachen der Reihe nach:
+**Der häufigste Grund auf dem Handy: Mobile-Browser blockieren die Wiedergabe
+als "Autoplay".** Unser Play-Button löst die Wiedergabe über die Spotify-REST-API
+aus (ein Netzwerk-Umweg über Spotifys Server), nicht als direkten, synchronen
+Klick-Effekt. iOS Safari und teilweise Android Chrome stufen das als
+automatisch gestartete Wiedergabe ein und blockieren den Ton — das ist eine
+offiziell von Spotify dokumentierte Einschränkung des Web Playback SDK auf
+mobilen Browsern, kein Bug in dem Sinne, den man vollständig wegprogrammieren
+kann. Seit diesem Update:
+- entriegelt die App den Audio-Kontext direkt im Klick-Moment
+  (`activateElement()`), wie von Spotify empfohlen
+- zeigt einen klaren Hinweis „Browser blockiert automatische Wiedergabe —
+  bitte nochmal auf Play tippen", falls es trotzdem blockiert wird (das
+  kommt laut Spotify-Community gelegentlich vor — einfach nochmal tippen)
+
+Weitere mögliche Ursachen der Reihe nach:
 
 1. **Redirect-URI stimmt nicht exakt überein.** Öffne den Debug-Link auf dem
    Login-Screen, kopiere die angezeigte URL 1:1 (inkl. Groß-/Kleinschreibung
@@ -155,16 +167,18 @@ Die häufigsten Ursachen der Reihe nach:
 2. **Dein Account ist im Development Mode nicht freigegeben.** Spotify-Apps
    starten im Testmodus — nur explizit hinzugefügte Nutzer:innen können sich
    einloggen. Dashboard → Settings → **User Management** → „Add new user" →
-   deine Spotify-E-Mail-Adresse eintragen. Seit diesem Update zeigt die App
-   bei diesem Fehler eine klare Meldung („Zugriff verweigert") statt einfach
-   nichts zu tun.
+   deine Spotify-E-Mail-Adresse eintragen. Die App zeigt bei diesem Fehler
+   jetzt eine klare Meldung („Zugriff verweigert") statt einfach nichts zu tun.
 3. **CLIENT_ID falsch/Platzhalter vergessen** — prüfen, ob in `app.js` deine
    echte Client-ID steht statt `DEINE_SPOTIFY_CLIENT_ID`.
 4. **Songs werden nicht gefunden** (Klassiker-Modus bricht schnell ab): war
    ein Bug in der Suchanfrage bei Titeln mit Klammern/Apostrophen — ist mit
    diesem Update behoben (Titel/Artist werden jetzt in Anführungszeichen
    gesucht).
-5. **Fehler in der Konsole ansehen**: Alle Spotify-API-Fehler werden jetzt
+5. **Kein aktives Spotify-Gerät / "Player wird noch verbunden"**: Nach dem
+   Login braucht der Web-Player ein paar Sekunden, um sich als Gerät bei
+   Spotify anzumelden. Einfach kurz warten und Play nochmal antippen.
+6. **Fehler in der Konsole ansehen**: Alle Spotify-API-Fehler werden jetzt
    mit Statuscode in der Browser-Konsole protokolliert (`console.error`),
    nützlich fürs Debuggen über den Remote-Inspector (siehe Test-Anleitung
    oben).
