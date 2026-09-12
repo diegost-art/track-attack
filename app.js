@@ -16,7 +16,7 @@ const SCOPES = [
   "user-read-playback-state",
 ].join(" ");
 
-const SNIPPET_START_MS = 25000;
+const SNIPPET_START_MS = 30000;
 const SNIPPET_DURATION_MS = 30000;
 const MAX_PLAYERS = 8;
 const CURRENT_YEAR = new Date().getFullYear();
@@ -412,7 +412,10 @@ async function drawSpotifyCard(attempts = 0) {
   const parts = [randomLetter, `year:${start}-${end}`];
   if (genre) parts.push(`genre:"${genre}"`);
   const query = parts.join(" ");
-  const offset = Math.floor(Math.random() * 150);
+  // Ab ein paar erfolglosen Versuchen auf Offset 0 zurückfallen — das ist so gut
+  // wie immer gültig, unabhängig davon, wie klein die Trefferzahl für diese
+  // Buchstabe/Jahr-Kombination ausfällt (schützt vor "Invalid limit"-Fehlern).
+  const offset = attempts >= 3 ? 0 : Math.floor(Math.random() * 20);
 
   const res = await spotifyFetch(
     `/search?q=${encodeURIComponent(query)}&type=track&limit=20&offset=${offset}`
@@ -421,7 +424,10 @@ async function drawSpotifyCard(attempts = 0) {
     toast("Spotify-Sitzung ungültig — bitte neu verbinden.", 5000);
     return null;
   }
-  if (!res.ok) return drawSpotifyCard(attempts + 1);
+  if (!res.ok) {
+    console.warn(`Spotify-Suche fehlgeschlagen (${res.status}, Versuch ${attempts + 1}/8): "${query}", offset=${offset}`);
+    return drawSpotifyCard(attempts + 1);
+  }
 
   const data = await res.json();
   const items = (data.tracks?.items || []).filter(
