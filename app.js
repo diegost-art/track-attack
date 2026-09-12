@@ -6,7 +6,7 @@
    ============================================================ */
 
 // ---- KONFIGURATION -------------------------------------------------
-const CLIENT_ID = "c88ea2eefa8842ab806695da036851d6";
+const CLIENT_ID = "DEINE_SPOTIFY_CLIENT_ID";
 const REDIRECT_URI = window.location.origin + window.location.pathname;
 const SCOPES = [
   "streaming",
@@ -145,7 +145,7 @@ async function sha256(plain) {
 }
 
 async function startLogin() {
-  if (!CLIENT_ID || CLIENT_ID === "c88ea2eefa8842ab806695da036851d6") {
+  if (!CLIENT_ID || CLIENT_ID === "DEINE_SPOTIFY_CLIENT_ID") {
     toast("Bitte zuerst CLIENT_ID in app.js eintragen (siehe README).", 5000);
     return;
   }
@@ -403,7 +403,13 @@ async function drawSpotifyCard(attempts = 0) {
     ? [...selectedGenres][Math.floor(Math.random() * selectedGenres.size)]
     : null;
 
-  const parts = [`year:${start}-${end}`];
+  // Spotify liefert bei einer REINEN Feldfilter-Suche (z. B. nur "year:1950-2026"
+  // ohne jeden weiteren Begriff) unzuverlässig leere Ergebnisse — ein bekanntes,
+  // undokumentiertes Verhalten der Such-API. Ein zufälliger Buchstabe als
+  // Freitext-Begriff davor behebt das und sorgt nebenbei für mehr Zufallsstreuung.
+  const letters = "abcdefghijklmnopqrstuvwxyz";
+  const randomLetter = letters[Math.floor(Math.random() * letters.length)];
+  const parts = [randomLetter, `year:${start}-${end}`];
   if (genre) parts.push(`genre:"${genre}"`);
   const query = parts.join(" ");
   const offset = Math.floor(Math.random() * 150);
@@ -421,7 +427,10 @@ async function drawSpotifyCard(attempts = 0) {
   const items = (data.tracks?.items || []).filter(
     (t) => t.album?.release_date && !usedTrackIds.has(t.id)
   );
-  if (items.length === 0) return drawSpotifyCard(attempts + 1);
+  if (items.length === 0) {
+    console.warn(`Spotify-Suche ohne Treffer (Versuch ${attempts + 1}/8): "${query}", offset=${offset}, total=${data.tracks?.total ?? "?"}`);
+    return drawSpotifyCard(attempts + 1);
+  }
 
   const track = items[Math.floor(Math.random() * items.length)];
   usedTrackIds.add(track.id);
