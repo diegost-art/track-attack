@@ -17,7 +17,7 @@ const SCOPES = [
 ].join(" ");
 
 const SNIPPET_START_MS = 25000;
-const SNIPPET_DURATION_MS = 15000;
+const SNIPPET_DURATION_MS = 30000;
 const MAX_PLAYERS = 8;
 const CURRENT_YEAR = new Date().getFullYear();
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // ohne 0/O/1/I
