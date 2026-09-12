@@ -6,7 +6,7 @@
    ============================================================ */
 
 // ---- KONFIGURATION -------------------------------------------------
-const CLIENT_ID = "DEINE_SPOTIFY_CLIENT_ID";
+const CLIENT_ID = "c88ea2eefa8842ab806695da036851d6";
 const REDIRECT_URI = window.location.origin + window.location.pathname;
 const SCOPES = [
   "streaming",
