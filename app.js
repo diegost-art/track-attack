@@ -6,7 +6,7 @@
    ============================================================ */
 
 // ---- KONFIGURATION -------------------------------------------------
-const CLIENT_ID = "c88ea2eefa8842ab806695da036851d6";
+const CLIENT_ID = "DEINE_SPOTIFY_CLIENT_ID";
 const REDIRECT_URI = window.location.origin + window.location.pathname;
 const SCOPES = [
   "streaming",
@@ -16,7 +16,7 @@ const SCOPES = [
   "user-read-playback-state",
 ].join(" ");
 
-const SNIPPET_START_MS = 30000;
+const SNIPPET_START_MS = 25000;
 const SNIPPET_DURATION_MS = 30000;
 const MAX_PLAYERS = 8;
 const CURRENT_YEAR = new Date().getFullYear();
@@ -418,7 +418,10 @@ async function drawSpotifyCard(attempts = 0) {
   const offset = attempts >= 3 ? 0 : Math.floor(Math.random() * 20);
 
   const res = await spotifyFetch(
-    `/search?q=${encodeURIComponent(query)}&type=track&limit=20&offset=${offset}`
+    // Seit Spotifys Development-Mode-Umstellung (März 2026) ist limit für /search
+    // auf max. 10 begrenzt (vorher 50) — höhere Werte liefern einen 400-Fehler
+    // "Invalid limit". Siehe: https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide
+    `/search?q=${encodeURIComponent(query)}&type=track&limit=10&offset=${offset}`
   );
   if (res.status === 401 || res.status === 403) {
     toast("Spotify-Sitzung ungültig — bitte neu verbinden.", 5000);

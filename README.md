@@ -178,7 +178,12 @@ Weitere mögliche Ursachen der Reihe nach:
 5. **Kein aktives Spotify-Gerät / "Player wird noch verbunden"**: Nach dem
    Login braucht der Web-Player ein paar Sekunden, um sich als Gerät bei
    Spotify anzumelden. Einfach kurz warten und Play nochmal antippen.
-6. **Fehler in der Konsole ansehen**: Alle Spotify-API-Fehler werden jetzt
+6. **Fehler "Invalid limit" (Status 400) bei der Songsuche**: Spotify hat
+   Development-Mode-Apps am 9. März 2026 auf neue Beschränkungen migriert —
+   der `/search`-Endpunkt erlaubt seitdem nur noch `limit` bis maximal 10
+   (vorher 50). Ist mit diesem Update behoben (`limit=10` statt `limit=20`).
+   Quelle: https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide
+7. **Fehler in der Konsole ansehen**: Alle Spotify-API-Fehler werden jetzt
    mit Statuscode in der Browser-Konsole protokolliert (`console.error`),
    nützlich fürs Debuggen über den Remote-Inspector (siehe Test-Anleitung
    oben).
