@@ -1,5 +1,9 @@
-const CACHE = "track-attack-v1";
-const ASSETS = ["./", "./index.html", "./style.css", "./app.js", "./songs.json", "./manifest.json"];
+const CACHE = "track-attack-v2";
+const ASSETS = [
+  "./", "./index.html", "./style.css", "./app.js", "./songs.json", "./manifest.json",
+  "./avatars/avatar-1.svg", "./avatars/avatar-2.svg", "./avatars/avatar-3.svg", "./avatars/avatar-4.svg",
+  "./avatars/avatar-5.svg", "./avatars/avatar-6.svg", "./avatars/avatar-7.svg", "./avatars/avatar-8.svg",
+];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));

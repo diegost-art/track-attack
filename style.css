@@ -374,6 +374,35 @@ body {
 .turn-chip strong { color: var(--purple); font-weight: 800; }
 .score-chip span { font-weight: 800; color: var(--rust); }
 
+/* ---------- Avatars ---------- */
+
+.avatar {
+  border-radius: 50%;
+  vertical-align: middle;
+  flex: 0 0 auto;
+  object-fit: cover;
+}
+
+.avatar-sm { width: 22px; height: 22px; margin-right: 6px; }
+.avatar-md { width: 36px; height: 36px; }
+.avatar-lg { width: 52px; height: 52px; }
+
+.player-row { display: flex; align-items: center; gap: 8px; }
+.player-row .avatar-md { flex: 0 0 auto; }
+
+.standing-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.standing-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.standing-row > span:first-child { display: flex; align-items: center; gap: 8px; flex: 1; }
+
 .standings-row {
   width: 100%;
   max-width: 480px;

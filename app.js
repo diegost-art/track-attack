@@ -19,6 +19,11 @@ const SCOPES = [
 const SNIPPET_START_MS = 25000;
 const SNIPPET_DURATION_MS = 30000;
 const MAX_PLAYERS = 8;
+
+// 8 handgezeichnete Disco-Avatare — ein Avatar pro Spielerplatz (Reihenfolge = Index).
+function avatarSrc(index) {
+  return `avatars/avatar-${(index % MAX_PLAYERS) + 1}.svg`;
+}
 const CURRENT_YEAR = new Date().getFullYear();
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // ohne 0/O/1/I
 const QR_API = "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=";
@@ -571,12 +576,12 @@ function renderLobbyPlayers() {
   const wrap = $("lobby-players");
   wrap.innerHTML = "";
   const order = roomState.order || Object.keys(roomState.players || {});
-  order.forEach((pid) => {
+  order.forEach((pid, i) => {
     const p = roomState.players?.[pid];
     if (!p) return;
     const row = document.createElement("div");
     row.className = "standing-row";
-    row.innerHTML = `<span>${escapeHtml(p.name)}${pid === roomState.hostId ? " 🎧" : ""}</span>`;
+    row.innerHTML = `<span><img class="avatar avatar-sm" alt="" src="${avatarSrc(i)}" />${escapeHtml(p.name)}${pid === roomState.hostId ? " 🎧" : ""}</span>`;
     wrap.appendChild(row);
   });
 }
@@ -609,8 +614,11 @@ function orderedPlayers() {
 function renderOnlineGame() {
   const turn = roomState.turn;
   if (!turn) return;
+  const order = roomState.order || [];
+  const activeIndex = order.indexOf(turn.currentPlayerId);
   const activeName = roomState.players[turn.currentPlayerId]?.name || "?";
   $("player-chip").textContent = activeName;
+  $("turn-avatar").src = avatarSrc(activeIndex >= 0 ? activeIndex : 0);
 
   const activeTimeline = roomState.players[turn.currentPlayerId]?.timeline || [];
   $("score-count").textContent = String(activeTimeline.length);
@@ -618,10 +626,10 @@ function renderOnlineGame() {
   // Standings
   const row = $("standings-row");
   row.innerHTML = "";
-  orderedPlayers().forEach((p) => {
+  orderedPlayers().forEach((p, i) => {
     const pill = document.createElement("span");
     pill.className = "standing-pill" + (p.id === turn.currentPlayerId ? " current" : "");
-    pill.textContent = `${p.name}: ${(p.timeline || []).length}`;
+    pill.innerHTML = `<img class="avatar avatar-sm" alt="" src="${avatarSrc(i)}" />${escapeHtml(p.name)}: ${(p.timeline || []).length}`;
     row.appendChild(pill);
   });
 
@@ -770,7 +778,8 @@ function showOnlineWinScreen() {
   players.forEach((p, i) => {
     const row = document.createElement("div");
     row.className = "standing-row" + (i === 0 ? " winner" : "");
-    row.innerHTML = `<span><span class="rank">${i + 1}.</span>${escapeHtml(p.name)}</span><span>${(p.timeline || []).length}</span>`;
+    const origIndex = (roomState.order || []).indexOf(p.id);
+    row.innerHTML = `<span><span class="rank">${i + 1}.</span><img class="avatar avatar-sm" alt="" src="${avatarSrc(origIndex >= 0 ? origIndex : 0)}" />${escapeHtml(p.name)}</span><span>${(p.timeline || []).length}</span>`;
     wrap.appendChild(row);
   });
   showScreen("win");
@@ -786,7 +795,7 @@ function renderPlayerRows() {
   players.forEach((p, i) => {
     const row = document.createElement("div");
     row.className = "player-row";
-    row.innerHTML = `<input type="text" maxlength="20" placeholder="Spieler ${i + 1}" value="${escapeHtml(p.name)}" />`;
+    row.innerHTML = `<img class="avatar avatar-md" alt="" src="${avatarSrc(i)}" /><input type="text" maxlength="20" placeholder="Spieler ${i + 1}" value="${escapeHtml(p.name)}" />`;
     const input = row.querySelector("input");
     input.addEventListener("input", () => (p.name = input.value));
     if (players.length > 1) {
@@ -903,6 +912,7 @@ async function startLocalGame() {
 
 function updateLocalHeader() {
   $("player-chip").textContent = currentPlayer().name;
+  $("turn-avatar").src = avatarSrc(currentPlayerIndex);
   $("score-count").textContent = String(currentPlayer().timeline.length);
   const row = $("standings-row");
   row.innerHTML = "";
@@ -910,7 +920,7 @@ function updateLocalHeader() {
   players.forEach((p, i) => {
     const pill = document.createElement("span");
     pill.className = "standing-pill" + (i === currentPlayerIndex ? " current" : "");
-    pill.textContent = `${p.name}: ${p.timeline.length}`;
+    pill.innerHTML = `<img class="avatar avatar-sm" alt="" src="${avatarSrc(i)}" />${escapeHtml(p.name)}: ${p.timeline.length}`;
     row.appendChild(pill);
   });
 }
@@ -987,7 +997,8 @@ async function continueLocal() {
       ranked.forEach((p, i) => {
         const row = document.createElement("div");
         row.className = "standing-row" + (i === 0 ? " winner" : "");
-        row.innerHTML = `<span><span class="rank">${i + 1}.</span>${escapeHtml(p.name)}</span><span>${p.timeline.length}</span>`;
+        const origIndex = players.indexOf(p);
+        row.innerHTML = `<span><span class="rank">${i + 1}.</span><img class="avatar avatar-sm" alt="" src="${avatarSrc(origIndex)}" />${escapeHtml(p.name)}</span><span>${p.timeline.length}</span>`;
         wrap.appendChild(row);
       });
     } else {
