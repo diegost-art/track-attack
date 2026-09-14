@@ -22,7 +22,7 @@ const MAX_PLAYERS = 8;
 
 // 8 handgezeichnete Disco-Avatare — ein Avatar pro Spielerplatz (Reihenfolge = Index).
 function avatarSrc(index) {
-  return `avatars/avatar-${(index % MAX_PLAYERS) + 1}.svg`;
+  return `avatar-${(index % MAX_PLAYERS) + 1}.svg`;
 }
 const CURRENT_YEAR = new Date().getFullYear();
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // ohne 0/O/1/I

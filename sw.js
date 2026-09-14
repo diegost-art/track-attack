@@ -1,8 +1,8 @@
-const CACHE = "track-attack-v2";
+const CACHE = "track-attack-v3";
 const ASSETS = [
   "./", "./index.html", "./style.css", "./app.js", "./songs.json", "./manifest.json",
-  "./avatars/avatar-1.svg", "./avatars/avatar-2.svg", "./avatars/avatar-3.svg", "./avatars/avatar-4.svg",
-  "./avatars/avatar-5.svg", "./avatars/avatar-6.svg", "./avatars/avatar-7.svg", "./avatars/avatar-8.svg",
+  "./avatar-1.svg", "./avatar-2.svg", "./avatar-3.svg", "./avatar-4.svg",
+  "./avatar-5.svg", "./avatar-6.svg", "./avatar-7.svg", "./avatar-8.svg",
 ];
 
 self.addEventListener("install", (e) => {
