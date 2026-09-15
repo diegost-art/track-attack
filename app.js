@@ -6,8 +6,13 @@
    ============================================================ */
 
 // ---- KONFIGURATION -------------------------------------------------
-const CLIENT_ID = "c88ea2eefa8842ab806695da036851d6";
-const REDIRECT_URI = window.location.origin + window.location.pathname;
+const CLIENT_ID = "DEINE_SPOTIFY_CLIENT_ID";
+// Auf dem Handy startet die installierte PWA über den Homescreen-Eintrag oft
+// mit "/index.html" explizit in der Adresse (kommt vom Manifest start_url),
+// während der Desktop-Browser denselben Ordner ohne Dateinamen anzeigt.
+// Für Spotify sind das zwei unterschiedliche Strings -> hier vereinheitlichen,
+// damit im Dashboard nur EINE Redirect-URI hinterlegt sein muss.
+const REDIRECT_URI = (window.location.origin + window.location.pathname).replace(/index\.html$/, "");
 const SCOPES = [
   "streaming",
   "user-read-email",

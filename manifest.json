@@ -2,7 +2,7 @@
   "name": "Track Attack",
   "short_name": "Track Attack",
   "description": "Hör den Song, errate das Jahr, bau deine Zeitleiste.",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
