@@ -6,7 +6,7 @@
    ============================================================ */
 
 // ---- KONFIGURATION -------------------------------------------------
-const CLIENT_ID = "DEINE_SPOTIFY_CLIENT_ID";
+const CLIENT_ID = "c88ea2eefa8842ab806695da036851d6";
 // Auf dem Handy startet die installierte PWA über den Homescreen-Eintrag oft
 // mit "/index.html" explizit in der Adresse (kommt vom Manifest start_url),
 // während der Desktop-Browser denselben Ordner ohne Dateinamen anzeigt.
