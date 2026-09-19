@@ -451,7 +451,13 @@ async function drawSpotifyCard(attempts = 0) {
     return drawSpotifyCard(attempts + 1);
   }
 
-  const track = items[Math.floor(Math.random() * items.length)];
+  // "Best of"-Filter: Spotify liefert pro Track einen popularity-Wert (0-100)
+  // mit. Statt komplett zufällig zu ziehen, nach Bekanntheit sortieren und nur
+  // aus den bekanntesten Treffern der Batch auswählen — deutlich weniger
+  // Nischen-/Deep-Cut-Songs, mehr Titel, die viele Leute erkennen.
+  const sorted = [...items].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+  const pool = sorted.slice(0, Math.min(3, sorted.length));
+  const track = pool[Math.floor(Math.random() * pool.length)];
   usedTrackIds.add(track.id);
   const year = parseInt(track.album.release_date.slice(0, 4), 10);
   if (!year || year < 1900) return drawSpotifyCard(attempts + 1);
