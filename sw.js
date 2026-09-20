@@ -1,4 +1,4 @@
-const CACHE = "track-attack-v6";
+const CACHE = "track-attack-v9";
 const ASSETS = [
   "./", "./index.html", "./style.css", "./app.js", "./songs.json", "./manifest.json",
   "./avatar-1.svg", "./avatar-2.svg", "./avatar-3.svg", "./avatar-4.svg",

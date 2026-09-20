@@ -532,7 +532,9 @@ body {
   display: flex;
   align-items: center;
   gap: 0;
+  width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 6px 16px 12px;
   scroll-snap-type: x proximity;
 }
@@ -572,6 +574,7 @@ body {
 }
 
 .tl-gap {
+  scroll-snap-align: center;
   flex: 0 0 auto;
   width: 44px;
   height: 98px;
@@ -792,6 +795,27 @@ body {
   word-break: break-all;
   color: var(--purple-deep);
   user-select: all;
+}
+
+.divider {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(23,16,24,0.5);
+  margin: 6px 0 2px;
+}
+
+.code-entry-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.code-entry-box input {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 6px;
 }
 
 /* ---------- Toast ---------- */
